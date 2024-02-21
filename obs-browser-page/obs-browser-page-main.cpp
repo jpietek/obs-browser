@@ -108,6 +108,10 @@ int main(int argc, char *argv[])
 #endif
 	CefRefPtr<BrowserApp> mainApp(new BrowserApp());
 
+	setenv("XDG_RUNTIME_DIR", "/run/user/1000", 1);
+	setenv("QT_QPA_PLATFORM", "wayland", 1);
+	setenv("WAYLAND_DISPLAY", "wayland-1", 1);
+	setenv("WAYLAND_DEBUG", "1", 1);
 	int ret = CefExecuteProcess(mainArgs, mainApp.get(), NULL);
 
 #ifdef _WIN32

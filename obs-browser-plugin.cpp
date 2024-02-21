@@ -71,7 +71,7 @@ static int adapterCount = 0;
 #endif
 static std::wstring deviceId;
 
-bool hwaccel = false;
+bool hwaccel = true;
 
 /* ========================================================================= */
 
@@ -311,7 +311,7 @@ static void BrowserInit(void)
 	os_mkdir(conf_path);
 
 	CefSettings settings;
-	settings.log_severity = LOGSEVERITY_DISABLE;
+	settings.log_severity = LOGSEVERITY_INFO;
 	BPtr<char> log_path = obs_module_config_path("debug.log");
 	BPtr<char> log_path_abs = os_get_abs_path_ptr(log_path);
 	CefString(&settings.log_file) = log_path_abs;
@@ -375,17 +375,7 @@ static void BrowserInit(void)
 	bfree(abs_path);
 #endif
 
-	bool tex_sharing_avail = false;
-
-#ifdef ENABLE_BROWSER_SHARED_TEXTURE
-	if (hwaccel) {
-		obs_enter_graphics();
-		hwaccel = tex_sharing_avail = gs_shared_texture_available();
-		obs_leave_graphics();
-	}
-#endif
-
-	app = new BrowserApp(tex_sharing_avail);
+	app = new BrowserApp();
 
 #ifdef _WIN32
 	CefExecuteProcess(args, app, nullptr);

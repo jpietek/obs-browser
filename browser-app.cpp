@@ -71,15 +71,10 @@ void BrowserApp::OnBeforeChildProcessLaunch(
 void BrowserApp::OnBeforeCommandLineProcessing(
 	const CefString &, CefRefPtr<CefCommandLine> command_line)
 {
-	if (!shared_texture_available) {
-		bool enableGPU = command_line->HasSwitch("enable-gpu");
-		CefString type = command_line->GetSwitchValue("type");
-
-		if (!enableGPU && type.empty()) {
-			command_line->AppendSwitch("disable-gpu-compositing");
-		}
-	}
-
+	//command_line->AppendSwitch("disable-gpu-compositing");
+	//command_line->AppendSwitch("use-ozone");
+	command_line->AppendSwitch("no-cef-sandbox");
+	//command_line->AppendSwitchWithValue("ozone-platform","wayland");
 	if (command_line->HasSwitch("disable-features")) {
 		// Don't override existing, as this can break OSR
 		std::string disableFeatures =
@@ -351,19 +346,11 @@ bool BrowserApp::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
 	return true;
 }
 
-bool IsValidFunction(std::string function)
-{
-	std::vector<std::string>::iterator iterator;
-	iterator = std::find(exposedFunctions.begin(), exposedFunctions.end(),
-			     function);
-	return iterator != exposedFunctions.end();
-}
-
 bool BrowserApp::Execute(const CefString &name, CefRefPtr<CefV8Value>,
 			 const CefV8ValueList &arguments,
 			 CefRefPtr<CefV8Value> &, CefString &)
 {
-	if (IsValidFunction(name.ToString())) {
+	if (1) {
 		if (arguments.size() >= 1 && arguments[0]->IsFunction()) {
 			callbackId++;
 			callbackMap[callbackId] = arguments[0];

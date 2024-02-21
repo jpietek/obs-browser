@@ -19,10 +19,8 @@ if(OS_WINDOWS)
          "Use legacy CEF version 3770 for browser source plugin" OFF)
 endif()
 
-if(OS_MACOS OR OS_WINDOWS)
   option(ENABLE_BROWSER_SHARED_TEXTURE
          "Enable shared texture support for browser source plugin" ON)
-endif()
 
 option(ENABLE_BROWSER_PANELS "Enable Qt web browser panel support" ON)
 option(ENABLE_BROWSER_QT_LOOP

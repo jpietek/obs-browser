@@ -172,16 +172,14 @@ bool BrowserSource::CreateBrowser()
 	return QueueCEFTask([this]() {
 #ifdef ENABLE_BROWSER_SHARED_TEXTURE
 		if (hwaccel) {
-			obs_enter_graphics();
-			tex_sharing_avail = gs_shared_texture_available();
-			obs_leave_graphics();
+			tex_sharing_avail = true;
 		}
 #else
 		bool hwaccel = false;
 #endif
 
 		CefRefPtr<BrowserClient> browserClient =
-			new BrowserClient(this, hwaccel && tex_sharing_avail,
+			new BrowserClient(this, true,
 					  reroute_audio, webpage_control_level);
 
 		CefWindowInfo windowInfo;
@@ -194,9 +192,7 @@ bool BrowserSource::CreateBrowser()
 #endif
 		windowInfo.windowless_rendering_enabled = true;
 
-#ifdef ENABLE_BROWSER_SHARED_TEXTURE
-		windowInfo.shared_texture_enabled = hwaccel;
-#endif
+		windowInfo.shared_texture_enabled = true;
 
 		CefBrowserSettings cefBrowserSettings;
 
@@ -229,11 +225,13 @@ bool BrowserSource::CreateBrowser()
 			cefBrowserSettings.web_security = STATE_DISABLED;
 		}
 #endif
+		blog(LOG_INFO, "before create browser");
 		auto browser = CefBrowserHost::CreateBrowserSync(
 			windowInfo, browserClient, url, cefBrowserSettings,
 			CefRefPtr<CefDictionaryValue>(), nullptr);
 
 		SetBrowser(browser);
+		blog(LOG_INFO, "after create browser");
 
 		if (reroute_audio)
 			cefBrowser->GetHost()->SetAudioMuted(true);
@@ -246,6 +244,7 @@ bool BrowserSource::CreateBrowser()
 
 void BrowserSource::DestroyBrowser()
 {
+	blog(LOG_INFO, "destroy browser");
 	ExecuteOnBrowser(ActuallyCloseBrowser, true);
 	SetBrowser(nullptr);
 }
@@ -640,19 +639,11 @@ extern void ProcessCef();
 
 void BrowserSource::Render()
 {
+	blog(LOG_INFO, "inside render");
 	bool flip = false;
-#ifdef ENABLE_BROWSER_SHARED_TEXTURE
-	flip = hwaccel;
-#endif
 
 	if (texture) {
-#ifdef __APPLE__
-		gs_effect_t *effect =
-			obs_get_base_effect((hwaccel) ? OBS_EFFECT_DEFAULT_RECT
-						      : OBS_EFFECT_DEFAULT);
-#else
 		gs_effect_t *effect = obs_get_base_effect(OBS_EFFECT_DEFAULT);
-#endif
 
 		bool linear_sample = extra_texture == NULL;
 		gs_texture_t *draw_texture = texture;

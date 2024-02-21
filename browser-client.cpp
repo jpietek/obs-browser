@@ -26,9 +26,7 @@
 #include <QApplication>
 #include <QThread>
 #include <QToolTip>
-#if defined(__APPLE__) && CHROME_VERSION_BUILD > 4430
-#include <IOSurface/IOSurface.h>
-#endif
+#include "chromium_structs.hpp"
 
 using namespace json11;
 
@@ -309,6 +307,7 @@ void BrowserClient::OnPaint(CefRefPtr<CefBrowser>, PaintElementType type,
 			    const RectList &, const void *buffer, int width,
 			    int height)
 {
+	blog(LOG_INFO, "inside on paint");
 	if (type != PET_VIEW) {
 		// TODO Overlay texture on top of bs->texture
 		return;
@@ -381,51 +380,52 @@ void BrowserClient::UpdateExtraTexture()
 	}
 }
 
-void BrowserClient::OnAcceleratedPaint(CefRefPtr<CefBrowser>,
-				       PaintElementType type, const RectList &,
-				       void *shared_handle)
-{
-	if (type != PET_VIEW) {
-		// TODO Overlay texture on top of bs->texture
-		return;
-	}
+typedef uint32_t __u32;
+#define fourcc_code(a, b, c, d) ((__u32)(a) | ((__u32)(b) << 8) | \
+				 ((__u32)(c) << 16) | ((__u32)(d) << 24))
+#define DRM_FORMAT_ARGB8888	fourcc_code('A', 'R', '2', '4') /* [31:0] A:R:G:B 8:8:8:8 little endian */
+void BrowserClient::OnAcceleratedPaint(CefRefPtr<CefBrowser>, PaintElementType type, const RectList &,
+  void *shared_handle) {
+  blog(LOG_INFO, "inside accelerated paint %p", shared_handle);
+  PaintElementType t = type;
 
-	if (!valid()) {
-		return;
-	}
+  NativePixmapHandle* h = reinterpret_cast<NativePixmapHandle*>(shared_handle);
+  int planes_count = h->planes.size();
 
-#ifndef _WIN32
-	if (shared_handle == bs->last_handle)
-		return;
-#endif
+  blog(LOG_INFO, "got native pixmap planes %d", planes_count);
 
-	obs_enter_graphics();
+  if (planes_count == 0) {
+    return;
+  }
 
-	if (bs->texture) {
-#ifdef _WIN32
-		//gs_texture_release_sync(bs->texture, 0);
-#endif
-		gs_texture_destroy(bs->texture);
-		bs->texture = nullptr;
-	}
+  int* fds = (int*)bzalloc(planes_count * sizeof(int));
+  uint32_t* strides = (uint32_t*)bzalloc(planes_count * sizeof(uint32_t));
+  uint32_t* offsets = (uint32_t*)bzalloc(planes_count * sizeof(uint32_t));
+  uint64_t* modifiers = (uint64_t*)bzalloc(planes_count * sizeof(uint64_t));
 
-#if defined(__APPLE__) && CHROME_VERSION_BUILD > 4183
-	bs->texture = gs_texture_create_from_iosurface(
-		(IOSurfaceRef)(uintptr_t)shared_handle);
-#elif defined(_WIN32) && CHROME_VERSION_BUILD > 4183
-	bs->texture =
-		gs_texture_open_nt_shared((uint32_t)(uintptr_t)shared_handle);
-	//if (bs->texture)
-	//	gs_texture_acquire_sync(bs->texture, 1, INFINITE);
+  for (int i=0; i<planes_count; i++) {
+    auto &plane = h->planes[i];
+    strides[i] = plane.stride;
+    offsets[i] = plane.offset;
+    fds[i] = plane.fd;
+    modifiers[i] = h->modifier;
+    blog(LOG_INFO, "use native pixmap plane %u %u %d", strides[i], offsets[i], fds[i]);
+  }
+  delete h;
 
-#else
-	bs->texture =
-		gs_texture_open_shared((uint32_t)(uintptr_t)shared_handle);
-#endif
-	UpdateExtraTexture();
-	obs_leave_graphics();
+  obs_enter_graphics();
+  if (bs->texture) {
+    gs_texture_destroy(bs->texture);
+    bs->texture = nullptr;
+  }
 
-	bs->last_handle = shared_handle;
+  bs->texture = gs_texture_create_from_dmabuf(
+      800, 600, DRM_FORMAT_ARGB8888, GS_BGRA, planes_count,
+      fds, strides, offsets, modifiers);
+
+  blog(LOG_INFO, "got texture %p", bs->texture);
+  UpdateExtraTexture();
+  obs_leave_graphics();
 }
 
 #ifdef CEF_ON_ACCELERATED_PAINT2

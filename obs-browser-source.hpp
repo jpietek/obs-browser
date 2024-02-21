@@ -59,7 +59,7 @@ struct BrowserSource {
 
 	obs_source_t *source = nullptr;
 
-	bool tex_sharing_avail = false;
+	bool tex_sharing_avail = true;
 	bool create_browser = false;
 	std::recursive_mutex lockBrowser;
 	CefRefPtr<CefBrowser> cefBrowser;
