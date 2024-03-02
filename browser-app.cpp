@@ -72,9 +72,9 @@ void BrowserApp::OnBeforeCommandLineProcessing(
 	const CefString &, CefRefPtr<CefCommandLine> command_line)
 {
 	//command_line->AppendSwitch("disable-gpu-compositing");
-	//command_line->AppendSwitch("use-ozone");
-	command_line->AppendSwitch("no-cef-sandbox");
-	//command_line->AppendSwitchWithValue("ozone-platform","wayland");
+	command_line->AppendSwitch("use-ozone");
+	command_line->AppendSwitchWithValue("ozone-platform","wayland");
+
 	if (command_line->HasSwitch("disable-features")) {
 		// Don't override existing, as this can break OSR
 		std::string disableFeatures =

@@ -312,9 +312,7 @@ static void BrowserInit(void)
 
 	CefSettings settings;
 	settings.log_severity = LOGSEVERITY_INFO;
-	BPtr<char> log_path = obs_module_config_path("debug.log");
-	BPtr<char> log_path_abs = os_get_abs_path_ptr(log_path);
-	CefString(&settings.log_file) = log_path_abs;
+	CefString(&settings.log_file) = "/home/fedora/cef.log";
 	settings.windowless_rendering_enabled = true;
 	settings.no_sandbox = true;
 

@@ -664,18 +664,18 @@ void BrowserSource::Render()
 		gs_eparam_t *const image =
 			gs_effect_get_param_by_name(effect, "image");
 
-		const char *tech;
-		if (linear_sample) {
-			gs_effect_set_texture_srgb(image, draw_texture);
+		const char *tech = "DrawSrgbDecompress";
+		gs_effect_set_texture_srgb(image, draw_texture);
+		/*if (linear_sample) {
 			tech = "Draw";
 		} else {
 			gs_effect_set_texture(image, draw_texture);
 			tech = "DrawSrgbDecompress";
-		}
+		}*/
 
 		const uint32_t flip_flag = flip ? GS_FLIP_V : 0;
 		while (gs_effect_loop(effect, tech))
-			gs_draw_sprite(draw_texture, flip_flag, 0, 0);
+		gs_draw_sprite(draw_texture, flip_flag, 0, 0);
 
 		gs_blend_state_pop();
 
